@@ -63,6 +63,13 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       setLoading(true);
       setError('');
       await loginWithEmail(formData.email, formData.password);
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setError('Nesprávny e-mail alebo heslo.');
+      } else {
+        setError('Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.');
+      }
     } catch {
       setError('Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.');
     } finally {

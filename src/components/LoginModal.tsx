@@ -10,7 +10,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginModalProps) {
-  const { user, profile, loginProvider, registerProfile } = useAuth();
+  const { user, profile, loginProvider, loginWithEmail, registerWithEmail, registerProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -18,7 +18,9 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
   const [formData, setFormData] = useState({
     displayName: '',
     companyName: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    email: '',
+    password: ''
   });
 
   useEffect(() => {
@@ -46,6 +48,56 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       await loginProvider();
     } catch (err: any) {
       setError('Prihlásenie zlyhalo. Skúste to znova.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      setError('Prosím vyplňte e-mail aj heslo.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      await loginWithEmail(formData.email, formData.password);
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setError('Nesprávny e-mail alebo heslo.');
+      } else {
+        setError('Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      setError('Prosím vyplňte e-mail aj heslo.');
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Heslo musí mať aspoň 6 znakov.');
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      await registerWithEmail(formData.email, formData.password);
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        setError('Tento e-mail už existuje. Použite prihlásenie e-mailom.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Email registrácia nie je aktívna vo Firebase projekte. Dočasne pokračujte cez Google alebo kontaktujte správcu.');
+      } else {
+        setError('Registrácia e-mailom zlyhala. Skúste to znova.');
+      }
     } finally {
       setLoading(false);
     }
@@ -110,6 +162,49 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
                 )}
                 Prihlásiť sa cez Google
               </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-400">alebo e-mail</span>
+                </div>
+              </div>
+
+              <form className="space-y-3" onSubmit={handleEmailLogin}>
+                <input
+                  type="email"
+                  placeholder="E-mail"
+                  value={formData.email}
+                  onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  required
+                />
+                <input
+                  type="password"
+                  placeholder="Heslo"
+                  value={formData.password}
+                  onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  Prihlásiť sa e-mailom
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEmailRegistration}
+                  disabled={loading}
+                  className="w-full bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  Registrovať sa e-mailom
+                </button>
+              </form>
             </div>
           ) : !profile ? (
             <div>

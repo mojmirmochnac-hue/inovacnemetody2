@@ -93,6 +93,8 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       } else {
         setError('Registrácia e-mailom zlyhala. Skúste to znova.');
       }
+    } catch {
+      setError('Registrácia e-mailom zlyhala. Skúste to znova.');
     } finally {
       setLoading(false);
     }

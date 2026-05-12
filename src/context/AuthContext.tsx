@@ -22,6 +22,12 @@ interface UserProfile {
   createdAt: any;
 }
 
+interface LocalAccount {
+  uid: string;
+  email: string;
+  password: string;
+}
+
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
@@ -40,6 +46,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const getLocalAccounts = (): LocalAccount[] => {
+    try {
+      return JSON.parse(localStorage.getItem('local_accounts_v1') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  const setLocalAccounts = (accounts: LocalAccount[]) => {
+    localStorage.setItem('local_accounts_v1', JSON.stringify(accounts));
+  };
+
+  const saveLocalSession = (uid: string) => localStorage.setItem('local_session_uid_v1', uid);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -56,7 +76,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           handleFirestoreError(error, OperationType.GET, `users/${u.uid}`);
         }
       } else {
-        setProfile(null);
+        const localUid = localStorage.getItem('local_session_uid_v1');
+        let loadedLocalProfile = false;
+        if (localUid) {
+          const accounts = getLocalAccounts();
+          const acc = accounts.find(a => a.uid === localUid);
+          if (acc) {
+            setUser({ uid: acc.uid, email: acc.email, displayName: acc.email } as any);
+            try {
+              const docRef = doc(db, 'users', acc.uid);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                setProfile(docSnap.data() as UserProfile);
+                loadedLocalProfile = true;
+              }
+            } catch {}
+          }
+        }
+        if (!loadedLocalProfile) setProfile(null);
       }
       setLoading(false);
     });
@@ -78,11 +115,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    localStorage.removeItem('local_session_uid_v1');
     await signOut(auth);
   };
 
   const loginWithEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      const accounts = getLocalAccounts();
+      const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase() && a.password === password);
+      if (!acc) throw error;
+      saveLocalSession(acc.uid);
+      setUser({ uid: acc.uid, email: acc.email, displayName: acc.email } as any);
+    }
   };
 
   const registerWithEmail = async (email: string, password: string) => {
@@ -90,6 +136,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await createUserWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       if (error?.code === 'auth/operation-not-allowed') {
+        const accounts = getLocalAccounts();
+        const existing = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+        if (existing) throw error;
+        const uid = `local_${Date.now()}`;
+        setLocalAccounts([...accounts, { uid, email, password }]);
+        saveLocalSession(uid);
+        setUser({ uid, email, displayName: email } as any);
         await signInAnonymously(auth);
         return;
       }

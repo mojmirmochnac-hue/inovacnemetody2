@@ -41,6 +41,13 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
 
   if (!isOpen) return null;
 
+  const getEmailLoginError = (code: string) => {
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      return 'Nesprávny e-mail alebo heslo.';
+    }
+    return 'Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.';
+  };
+
   const handleLogin = async () => {
     try {
       setLoading(true);
@@ -65,13 +72,7 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       await loginWithEmail(formData.email, formData.password);
     } catch (err: any) {
       const code = err?.code || '';
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        setError('Nesprávny e-mail alebo heslo.');
-      } else {
-        setError('Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.');
-      }
-    } catch {
-      setError('Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.');
+      setError(getEmailLoginError(code));
     } finally {
       setLoading(false);
     }
@@ -100,8 +101,6 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       } else {
         setError('Registrácia e-mailom zlyhala. Skúste to znova.');
       }
-    } catch {
-      setError('Registrácia e-mailom zlyhala. Skúste to znova.');
     } finally {
       setLoading(false);
     }

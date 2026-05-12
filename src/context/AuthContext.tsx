@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       throw error;
     }
-    await createUserWithEmailAndPassword(auth, email, password);
   };
 
   const registerProfile = async (data: Omit<UserProfile, 'userId' | 'createdAt'>) => {

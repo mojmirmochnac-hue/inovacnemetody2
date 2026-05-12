@@ -84,6 +84,15 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
       setLoading(true);
       setError('');
       await registerWithEmail(formData.email, formData.password);
+    } catch (err: any) {
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        setError('Tento e-mail už existuje. Použite prihlásenie e-mailom.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Email registrácia nie je aktívna vo Firebase projekte. Dočasne pokračujte cez Google alebo kontaktujte správcu.');
+      } else {
+        setError('Registrácia e-mailom zlyhala. Skúste to znova.');
+      }
     } catch {
       setError('Registrácia e-mailom zlyhala. Skúste to znova.');
     } finally {

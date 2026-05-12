@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import {
+  User,
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 
@@ -17,6 +25,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   loginProvider: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  registerWithEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   registerProfile: (data: Omit<UserProfile, 'userId' | 'createdAt'>) => Promise<void>;
 }
@@ -61,6 +71,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  const loginWithEmail = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const registerWithEmail = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
+  };
+
   const registerProfile = async (data: Omit<UserProfile, 'userId' | 'createdAt'>) => {
     if (!user) throw new Error("No user logged in");
     
@@ -79,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, loginProvider, logout, registerProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, loginProvider, loginWithEmail, registerWithEmail, logout, registerProfile }}>
       {children}
     </AuthContext.Provider>
   );

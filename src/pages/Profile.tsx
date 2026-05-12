@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogOut, User, Building2, Phone, Mail, Calendar, ExternalLink, ClipboardCheck, ArrowRight } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { METHODS_MAP } from '../data/testConfig';
 import { innovationMethods } from '../data/methods';
@@ -24,21 +24,12 @@ export default function Profile() {
     async function fetchResults() {
       if (!user) return;
       try {
-        const q = query(
-          collection(db, 'users', user.uid, 'testResults'),
-          where('userId', '==', user.uid)
-        );
+        const q = query(collection(db, 'users', user.uid, 'testResults'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         const resultsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        // Sort in memory (descending by time)
-        resultsData.sort((a: any, b: any) => {
-          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : Date.now();
-          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : Date.now();
-          return timeB - timeA;
-        });
         setResults(resultsData);
       } catch (error) {
         handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/testResults`);
@@ -142,15 +133,13 @@ export default function Profile() {
             <ClipboardCheck className="w-7 h-7 text-indigo-600" />
             Inovačná Diagnostika
           </h2>
-          {results.length > 0 && (
-            <button 
-              onClick={() => navigate('/test', { state: { restartNow: true } })}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold shadow-md shadow-indigo-200"
-            >
-              Vyplniť nový test
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          )}
+          <button 
+            onClick={() => navigate('/test', { state: { restartNow: true } })}
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-bold shadow-md shadow-indigo-200"
+          >
+            Urobiť test
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
 
         {loadingResults ? (

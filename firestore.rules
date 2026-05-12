@@ -38,7 +38,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
       allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
                     incoming().userId == existing().userId && incoming().createdAt == existing().createdAt &&
                     incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'companyName', 'phoneNumber']);

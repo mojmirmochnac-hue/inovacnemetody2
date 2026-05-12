@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile",
+      "description": "Information about the registered user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "companyName": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "displayName", "email", "companyName", "phoneNumber", "createdAt"]
+    },
+    "testResult": {
+      "title": "Test Result",
+      "description": "Result of the Innovation Test.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "resultData": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "resultData", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "user" },
+      "description": "Stores user profiles."
+    },
+    "/users/{userId}/testResults/{resultId}": {
+      "schema": { "$ref": "testResult" },
+      "description": "Stores test results for the user."
+    }
+  }
+}

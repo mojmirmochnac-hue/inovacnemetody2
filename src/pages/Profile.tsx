@@ -12,7 +12,9 @@ export default function Profile() {
   const { user, profile, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [results, setResults] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
   const [loadingResults, setLoadingResults] = useState(true);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
 
   useEffect(() => {
     if (!loading && (!user || !profile)) {
@@ -40,6 +42,29 @@ export default function Profile() {
     
     if (user) {
       fetchResults();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    async function fetchFavorites() {
+      if (!user) return;
+      try {
+        const q = query(collection(db, 'users', user.uid, 'favorites'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const favoritesData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setFavorites(favoritesData);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, `users/${user.uid}/favorites`);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    }
+
+    if (user) {
+      fetchFavorites();
     }
   }, [user]);
 
@@ -124,6 +149,29 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-8">
+        <h2 className="text-2xl font-black text-slate-900 mb-6">Obľúbené metódy</h2>
+        {loadingFavorites ? (
+          <p className="text-slate-500">Načítavam obľúbené metódy...</p>
+        ) : favorites.length === 0 ? (
+          <p className="text-slate-500">Zatiaľ nemáte uložené žiadne obľúbené metódy.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-4">
+            {favorites.map((fav) => (
+              <Link
+                key={fav.id}
+                to={`/method/${fav.methodId}`}
+                className="flex flex-col p-5 rounded-2xl border border-slate-200 hover:border-slate-400 hover:shadow-md transition bg-white"
+              >
+                <div className="font-bold text-slate-900 text-lg">{fav.title}</div>
+                <div className="text-xs mt-1 mb-2 uppercase tracking-wide text-indigo-600">{fav.category}</div>
+                <p className="text-sm text-slate-600 line-clamp-2">{fav.shortDescription}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Diagnostika */}

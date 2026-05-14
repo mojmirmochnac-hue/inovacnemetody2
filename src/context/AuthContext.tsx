@@ -37,6 +37,7 @@ interface AuthContextType {
   registerWithEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   registerProfile: (data: Omit<UserProfile, 'userId' | 'createdAt'>) => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -168,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, loginProvider, loginWithEmail, registerWithEmail, logout, registerProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, loginProvider, loginWithEmail, registerWithEmail, logout, registerProfile, isAuthenticated: Boolean(user && profile) }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { extendedMethods } from '../data/extendedMethods';
 import { innovationMethods } from '../data/methods';
-import { ArrowLeft, BookOpen, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle, ChevronDown, ChevronUp, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { LoginModal } from '../components/LoginModal';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { deleteDoc, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { DesignSprintProcess } from '../components/visuals/DesignSprintProcess';
 import { LeanStartupCycle } from '../components/visuals/LeanStartupCycle';
 import { DesignThinkingProcess } from '../components/visuals/DesignThinkingProcess';
@@ -18,9 +22,32 @@ export default function MethodPage() {
   const { methodId } = useParams<{ methodId: string }>();
   const location = useLocation();
   const fromTest = location.state?.fromTest;
+  const { user, profile, isAuthenticated } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
   
   const extendedData = methodId ? extendedMethods[methodId] : null;
   const basicData = innovationMethods.find(m => m.id === methodId);
+
+  useEffect(() => {
+    async function loadFavorite() {
+      if (!user || !methodId) return;
+      try {
+        const ref = doc(db, 'users', user.uid, 'favorites', methodId);
+        const snap = await getDoc(ref);
+        setIsFavorite(snap.exists());
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `users/${user.uid}/favorites/${methodId}`);
+      }
+    }
+
+    if (isAuthenticated) {
+      loadFavorite();
+    } else {
+      setIsFavorite(false);
+    }
+  }, [user, isAuthenticated, methodId]);
 
   if (!basicData) {
     return (
@@ -37,6 +64,7 @@ export default function MethodPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 pb-20">
       {/* Hero Section */}
       <div className="bg-white border-b border-gray-200">
@@ -54,6 +82,44 @@ export default function MethodPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
             {extendedData ? extendedData.title : basicData.title}
           </h1>
+          <button
+            onClick={async () => {
+              if (!profile || !user || !methodId) {
+                setIsLoginModalOpen(true);
+                return;
+              }
+              try {
+                setIsUpdatingFavorite(true);
+                const ref = doc(db, 'users', user.uid, 'favorites', methodId);
+                if (isFavorite) {
+                  await deleteDoc(ref);
+                  setIsFavorite(false);
+                } else {
+                  await setDoc(ref, {
+                    methodId,
+                    title: basicData.title,
+                    category: basicData.category,
+                    shortDescription: basicData.shortDescription,
+                    createdAt: serverTimestamp(),
+                  });
+                  setIsFavorite(true);
+                }
+              } catch (error) {
+                handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}/favorites/${methodId}`);
+              } finally {
+                setIsUpdatingFavorite(false);
+              }
+            }}
+            disabled={isUpdatingFavorite}
+            className={`mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${
+              isFavorite
+                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            } disabled:opacity-60`}
+          >
+            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+            {isFavorite ? 'Uložené medzi obľúbené' : 'Uložiť medzi obľúbené'}
+          </button>
           
           <ExpandableIntro text={extendedData ? extendedData.intro : basicData.shortDescription} />
         </div>
@@ -215,6 +281,12 @@ export default function MethodPage() {
 
       </div>
     </div>
+    <LoginModal
+      isOpen={isLoginModalOpen}
+      onClose={() => setIsLoginModalOpen(false)}
+      redirectUrl={`/method/${methodId || ''}`}
+    />
+    </>
   );
 }
 

@@ -48,13 +48,13 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
     return 'Prihlásenie e-mailom zlyhalo. Skontrolujte údaje a skúste to znova.';
   };
 
-  const handleLogin = async () => {
+  const handleGoogleAuth = async () => {
     try {
       setLoading(true);
       setError('');
       await loginProvider();
     } catch (err: any) {
-      setError('Prihlásenie zlyhalo. Skúste to znova.');
+      setError('Google prihlásenie/registrácia zlyhala. Skúste to znova.');
     } finally {
       setLoading(false);
     }
@@ -151,13 +151,13 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
               <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <LogIn className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Prihlásenie</h2>
-              <p className="text-gray-600 mb-8">Prihláste sa pomocou Google účtu a pokračujte ďalej.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Prihlásenie / Registrácia</h2>
+              <p className="text-gray-600 mb-8">Môžete sa prihlásiť alebo registrovať cez Google účet.</p>
               
               {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm">{error}</div>}
 
               <button
-                onClick={handleLogin}
+                onClick={handleGoogleAuth}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
               >
@@ -170,6 +170,14 @@ export function LoginModal({ isOpen, onClose, redirectUrl = '/profil' }: LoginMo
                   </svg>
                 )}
                 Prihlásiť sa cez Google
+              </button>
+              <button
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="mt-3 w-full flex items-center justify-center gap-3 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                Registrovať sa cez Google
               </button>
 
               <div className="relative my-6">
